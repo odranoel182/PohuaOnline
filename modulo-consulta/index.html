@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pohualizcalli | 🔍 Consulta en Línea</title>
+    <!-- Librería PapaParse para lectura de CSV -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Librería html5-qrcode para lectura de QR -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #1a365d;
+            --secondary-color: #2b6cb0;
+            --accent-color: #319795;
+            --bg-color: #f7fafc;
+            --card-bg: #ffffff;
+            --text-dark: #2d3748;
+            --text-muted: #718096;
+            --border-color: #e2e8f0;
+            --success-color: #28a745;
+            --danger-color: #e53e3e;
+            --warning-color: #dd6b20;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .badge-status {
+            background-color: var(--warning-color);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+        }
+
+        .badge-status.connected {
+            background-color: var(--success-color);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: white;
+            border-radius: 50%;
+        }
+
+        nav.tab-nav {
+            background-color: #ffffff;
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 2rem;
+            display: flex;
+            gap: 1rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            background: none;
+            border: none;
+            padding: 1rem 1.25rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-button:hover { color: var(--secondary-color); }
+        .tab-button.active {
+            color: var(--secondary-color);
+            border-bottom-color: var(--secondary-color);
+        }
+
+        main {
+            max-width: 950px;
+            width: 90%;
+            margin: 2rem auto;
+            flex-grow: 1;
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header {
+            background-color: #ebf8ff;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-header h2 {
+            font-size: 1.1rem;
+            color: var(--primary-color);
+        }
+
+        .card-body { padding: 1.5rem; }
+
+        .card-footer {
+            padding: 1rem 1.5rem;
+            background-color: #fafafa;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            justify-content: center;
+        }
+
+        .btn-primary:hover { background-color: var(--primary-color); }
+
+        .btn-qr {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.25rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            justify-content: center;
+        }
+
+        .btn-qr:hover { background-color: #2c7a7b; }
+
+        .btn-save {
+            background-color: var(--success-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.75rem;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .search-box { display: flex; gap: 10px; flex-wrap: wrap; }
+        .search-box input, .input-password, select, textarea {
+            flex-grow: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+            outline: none;
+            min-width: 200px;
+        }
+
+        .info-box {
+            background-color: #ebf8ff;
+            border-left: 4px solid var(--secondary-color);
+            color: var(--primary-color);
+            padding: 1rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.4;
+        }
+
+        .mapping-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .mapping-item {
+            display: flex;
+            flex-direction: column;
+            background-color: #f8fafc;
+            padding: 1.2rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .input-field-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            border: 1px solid transparent;
+            background: transparent;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            outline: none;
+            width: 70%;
+        }
+
+        .input-field-name:hover, .input-field-name:focus {
+            border-color: var(--border-color);
+            background-color: white;
+        }
+
+        .btn-remove-field {
+            background-color: #fff5f5;
+            color: var(--danger-color);
+            border: 1px solid #feb2b2;
+            border-radius: 4px;
+            padding: 0.2rem 0.5rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .select-container { display: flex; align-items: center; gap: 10px; }
+        .select-container span { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); }
+
+        select {
+            width: 100%;
+            padding: 0.6rem 0.8rem;
+            font-weight: 600;
+            background-color: white;
+        }
+
+        .btn-add-field {
+            background-color: #e2e8f0;
+            color: var(--primary-color);
+            border: 2px dashed var(--secondary-color);
+            padding: 0.8rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 1.5rem;
+        }
+
+        /* MODALES */
+        .modal-backdrop {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+
+        .modal-card {
+            background-color: white;
+            border-radius: 12px;
+            max-width: 650px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-close-modal { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+        .modal-body { padding: 1.5rem; }
+
+        /* DISEÑO DE CERTIFICADO DIGITAL EN MODAL */
+        .certificado-container {
+            background: #fff;
+            border: 4px double var(--secondary-color);
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .certificado-logo {
+            max-height: 80px;
+            max-width: 180px;
+            object-fit: contain;
+            margin-bottom: 1rem;
+        }
+
+        .certificado-titulo {
+            font-size: 1.3rem;
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        .certificado-nombre {
+            font-size: 2rem;
+            color: var(--text-dark);
+            font-weight: 800;
+            margin: 1rem 0;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .certificado-texto-libre {
+            font-size: 2rem;
+            color: var(--text-dark);
+            font-weight: 600;
+            margin: 1rem 0;
+            font-style: italic;
+        }
+
+        .certificado-talleres-box {
+            background-color: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            text-align: center;
+        }
+
+        .certificado-talleres-box h4 {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .certificado-talleres-box ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .certificado-talleres-box li {
+            padding: 0.4rem 0.6rem;
+            border-bottom: 1px dashed var(--border-color);
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        .certificado-talleres-box li:last-child { border-bottom: none; }
+
+        .modal-footer { padding: 1rem 1.5rem; background-color: #fafafa; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; }
+        
+        .error-msg {
+            color: var(--danger-color);
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+            display: none;
+        }
+
+        #qr-reader-container {
+            width: 100%;
+            max-width: 450px;
+            margin: 0 auto;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .results-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            background-color: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .result-item:hover {
+            background-color: #ebf8ff;
+            border-color: var(--secondary-color);
+        }
+        .result-name { font-size: 1.05rem; font-weight: 700; color: var(--primary-color); }
+        .result-sub { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
+        .btn-select {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Pohualizcalli | Consulta en Línea</h1>
+        <div id="statusBadge" class="badge-status">
+            <div class="status-dot"></div>
+            <span id="statusText">Sincronizando...</span>
+        </div>
+    </header>
+
+    <nav class="tab-nav">
+        <button class="tab-button active" onclick="openTab(event, 'tab-enlinea')">🌐 Consulta en Línea</button>
+        <button class="tab-button" onclick="intentarAccesoAdmin(event)">⚙️ Configuración (Mapeo - Admin)</button>
+    </nav>
+
+    <main>
+        <!-- PESTAÑA 1: CONSULTA EN LÍNEA -->
+        <div id="tab-enlinea" class="tab-content active">
+            <section class="card" style="max-width: 500px; margin: 0 auto; text-align: center;">
+                <div class="card-header" style="justify-content: center;">
+                    <h2>🌐 Consulta en Línea para Alumnos</h2>
+                </div>
+                <div class="card-body">
+                    <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">
+                        Ingresa tu folio/CURP o escanea tu código QR institucional para visualizar tu certificado digital y talleres actuales.
+                    </p>
+                    <div style="display: flex; flex-direction: column; gap: 30px;">
+                        <input type="text" id="onlineSearchInput" placeholder="Ingresa Folio, CURP o Nombre..." style="text-align: center;" onkeyup="if(event.key==='Enter') realizarConsultaEnLinea()">
+                        <button class="btn-primary" type="button" onclick="realizarConsultaEnLinea()">🔍 Consultar Mi Información</button>
+                        <button class="btn-qr" type="button" onclick="abrirModalScanner()">📷 Escanear QR</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- PESTAÑA 2: CONFIGURACIÓN ADMIN Y MAPEOS -->
+        <div id="tab-mapeo" class="tab-content">
+            <section class="card">
+                <div class="card-header">
+                    <h2>📊 Conectar Base de Datos (Google Sheets)</h2>
+                </div>
+                <div class="card-body">
+                    <div class="search-box">
+                        <input type="text" id="sheetUrlInput" placeholder="Pega el enlace completo o ID de tu Google Sheet aquí...">
+                    </div>
+                </div>
+            </section>
+
+            <!-- 1. MAPEO BÚSQUEDA MANUAL -->
+            <section class="card">
+                <div class="card-header">
+                    <h2>🔍 1. Columnas de Búsqueda</h2>
+                </div>
+                <div class="card-body">
+                    <div class="info-box">
+                        Define en qué columnas de tu hoja debe buscar el sistema cuando se ingresa texto en la consulta.
+                    </div>
+                    <div class="mapping-grid" id="searchMappingContainer"></div>
+                    <button type="button" class="btn-add-field" onclick="agregarCampoBusqueda('Nuevo Criterio', 'A')">➕ Agregar Criterio de Búsqueda</button>
+                </div>
+            </section>
+
+            <!-- 2. MAPEO PARA FICHA TÉCNICA (VISTA DETALLADA) -->
+            <section class="card">
+                <div class="card-header">
+                    <h2>📋 2. Mapeo para Ficha Técnica (Vista Detallada)</h2>
+                </div>
+                <div class="card-body">
+                    <div class="info-box">
+                        Configura los campos generales adicionales para perfiles detallados.
+                    </div>
+                    <div class="mapping-grid" id="mappingContainer"></div>
+                    <button type="button" class="btn-add-field" onclick="agregarNuevoCampo('Nuevo Campo', 'A')">➕ Agregar Campo</button>
+                </div>
+            </section>
+
+            <!-- 3. MAPEO DINÁMICO DEL QR -->
+            <section class="card">
+                <div class="card-header">
+                    <h2>🔲 3. ⚙️ Mapeo Dinámico del QR (Descomposición en Cascada)</h2>
+                </div>
+                <div class="card-body">
+                    <div class="info-box">
+                        Configura cómo está estructurado el QR y su orden de descomposición.
+                    </div>
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="font-weight: 700; display: block; margin-bottom: 0.5rem;">Carácter Separador Principal en el QR:</label>
+                        <select id="qrSeparatorSelect" style="max-width: 300px;">
+                            <option value="|">Barra Vertical ( | )</option>
+                            <option value="_">Guion Bajo ( _ )</option>
+                            <option value="-">Guion Medio ( - )</option>
+                            <option value=",">Coma ( , )</option>
+                        </select>
+                    </div>
+                    <label style="font-weight: 700; display: block; margin-bottom: 0.5rem;">Estructura por Partes del QR:</label>
+                    <div class="mapping-grid" id="qrMappingContainer"></div>
+                    <button type="button" class="btn-add-field" onclick="agregarCampoQR('Nueva Parte', 'A')">➕ Agregar Posición de Cadena QR</button>
+                </div>
+            </section>
+
+            <!-- 4. MAPEO PARA CONSULTA (CERTIFICADO DIGITAL) -->
+            <section class="card">
+                <div class="card-header">
+                    <h2>📋 4. Mapeo para consulta (Certificado Digital)</h2>
+                </div>
+                <div class="card-body">
+                    <div class="info-box">
+                        Configura los elementos visuales e informativos del Certificado Digital (Nombre en Col. S, Apellidos en Col. R, Talleres en Col. E), además de personalizar el texto institucional y el logotipo.
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="font-weight: 700; display: block; margin-bottom: 0.5rem;">Logotipo Institucional (Certificado):</label>
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <input type="file" id="logoFileInput" accept="image/*" onchange="subirLogotipo(event)" style="padding: 0.4rem; background: #fff;">
+                            <button type="button" class="btn-primary" onclick="removerLogotipo()" style="background-color: var(--danger-color);">🗑️ Quitar Logo</button>
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <img id="logoPreview" src="" alt="Vista previa del logo" style="max-height: 70px; display: none; border: 1px solid var(--border-color); padding: 4px; border-radius: 4px;">
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="font-weight: 700; display: block; margin-bottom: 0.5rem;">Texto Personalizado del Certificado:</label>
+                        <textarea id="certificadoTextoConfig" rows="3" placeholder="Ej. El alumno está actualmente inscrito en la escuela de foto..."></textarea>
+                    </div>
+
+                    <label style="font-weight: 700; display: block; margin-bottom: 0.5rem;">Mapeo de Columnas del Certificado:</label>
+                    <div class="mapping-grid" id="certificadoMappingContainer"></div>
+                    <button type="button" class="btn-add-field" onclick="agregarCampoCertificado('Taller / Curso', 'E')">➕ Agregar Campo al Certificado</button>
+                </div>
+
+                <div class="card-footer">
+                    <button type="button" class="btn-save" onclick="guardarEnNube()">☁️ Guardar Configuración en Nuevo Bin (Independiente)</button>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- MODAL ESCÁNER QR -->
+    <div class="modal-backdrop" id="qrModal">
+        <div class="modal-card" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>📷 Escáner de Código QR</h3>
+                <button class="btn-close-modal" onclick="cerrarModalScanner()">&times;</button>
+            </div>
+            <div class="modal-body" style="text-align: center;">
+                <p style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-muted);">
+                    Apunta con la cámara al código QR. El sistema identificará los datos del alumno al instante.
+                </p>
+                <div id="qr-reader-container">
+                    <div id="qr-reader"></div>
+                </div>
+                <div id="qrStatusMsg" style="margin-top: 10px; font-weight: 700; color: var(--secondary-color);"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" onclick="cerrarModalScanner()">Cerrar Cámara</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL SELECCIÓN DE COINCIDENCIAS -->
+    <div class="modal-backdrop" id="selectionModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>👥 Selecciona el Alumno Correcto</h3>
+                <button class="btn-close-modal" onclick="cerrarModalSeleccion()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-muted);">Se encontraron múltiples coincidencias. Haz clic en el alumno correcto:</p>
+                <div class="results-list" id="selectionListContainer"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" onclick="cerrarModalSeleccion()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CONTRASEÑA ADMIN -->
+    <div class="modal-backdrop" id="authModal">
+        <div class="modal-card" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>🔒 Acceso Administrador</h3>
+                <button class="btn-close-modal" onclick="cerrarAuthModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-muted);">Ingresa la clave para modificar las configuraciones de mapeo y enlace:</p>
+                <input type="password" id="adminPasswordInput" class="input-password" placeholder="Contraseña..." onkeyup="if(event.key==='Enter') verificarPassword()">
+                <div id="authErrorMsg" class="error-msg">Contraseña incorrecta. Intenta de nuevo.</div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" onclick="verificarPassword()">Ingresar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL RESULTADO / CERTIFICADO DIGITAL -->
+    <div class="modal-backdrop" id="studentModal">
+        <div class="modal-card" style="max-width: 680px;">
+            <div class="modal-header">
+                <h3>📜 Certificado Digital de Alumno</h3>
+                <button class="btn-close-modal" onclick="cerrarModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="certificado-container" id="certificadoOutputContainer">
+                    <!-- Contenido dinámico generado por script -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                							<!-- <button class="btn-primary" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button> -->
+                <button class="btn-primary" onclick="cerrarModal()" style="background-color: var(--text-muted);">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const MASTER_KEY = "$2a$10$Rp5q9hbeG4FVEGO/Z74AY.Sm9obWC3Qk4SYADccCJVyGm1FuHX3ku";
+        
+        // Clave única en localStorage para recordar el BIN independiente de este módulo de Certificado / Consulta
+        const LOCAL_STORAGE_BIN_KEY = "pohualizcalli_certificado_bin_id";
+        
+        // Si ya tienes un Bin ID creado para este módulo, puedes colocarlo aquí por defecto, o se creará automáticamente al guardar.
+        let binIdActual = localStorage.getItem(LOCAL_STORAGE_BIN_KEY) || "6a6be75eda38895dfea68beb"; 
+        const ADMIN_PASSWORD = "pohua2026"; 
+
+        let camposMapeo = [
+            { id: 1, label: "Nombre", col: "S" },
+            { id: 2, label: "Apellidos", col: "R" },
+            { id: 3, label: "Talleres Actuales", col: "E" }
+        ];
+        let camposBusqueda = [
+            { id: 1, label: "Nombre", col: "S" },
+            { id: 2, label: "Apellido", col: "R" },
+            { id: 3, label: "CURP / Folio", col: "D" }
+        ];
+        let camposQR = [
+            { id: 101, label: "Nombre", col: "S" },
+            { id: 102, label: "Apellidos", col: "R" },
+            { id: 103, label: "Folio", col: "Q" }
+        ]; 
+        let camposCertificado = [
+            { id: 201, label: "Nombre", col: "S" },
+            { id: 202, label: "Apellidos", col: "R" },
+            { id: 203, label: "Talleres Actuales", col: "E" }
+        ];
+
+        let qrSeparador = "|";
+        let sheetIdActual = "";
+        let logoBase64 = "";
+        let textoCertificadoConfigGlobal = "El alumno está actualmente inscrito en los siguientes talleres:";
+
+        let datosAlumnosCache = [];
+        let alumnosAgrupados = [];
+        let adminAutenticado = false;
+        let html5QrScanner = null;
+        let isProcessingQR = false;
+
+        function escapeHTML(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function openTab(evt, tabId) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            if (evt) evt.currentTarget.classList.add('active');
+        }
+
+        function intentarAccesoAdmin(evt) {
+            if (adminAutenticado) {
+                openTab(evt, 'tab-mapeo');
+            } else {
+                document.getElementById('adminPasswordInput').value = '';
+                document.getElementById('authErrorMsg').style.display = 'none';
+                document.getElementById('authModal').style.display = 'flex';
+            }
+        }
+
+        function verificarPassword() {
+            if (document.getElementById('adminPasswordInput').value === ADMIN_PASSWORD) {
+                adminAutenticado = true;
+                cerrarAuthModal();
+                const botonesNav = document.querySelectorAll('.tab-button');
+                const btnAdmin = botonesNav[botonesNav.length - 1];
+                openTab(null, 'tab-mapeo');
+                btnAdmin.classList.add('active');
+            } else {
+                document.getElementById('authErrorMsg').style.display = 'block';
+            }
+        }
+
+        function cerrarAuthModal() { document.getElementById('authModal').style.display = 'none'; }
+        function cerrarModalSeleccion() { document.getElementById('selectionModal').style.display = 'none'; }
+
+        function obtenerOpcionesColumnas() {
+            const columnas = [];
+            for (let i = 65; i <= 90; i++) columnas.push(String.fromCharCode(i));
+            for (let i = 65; i <= 90; i++) columnas.push('A' + String.fromCharCode(i));
+            return columnas;
+        }
+
+        function renderizarMapeo() {
+            const container = document.getElementById('mappingContainer');
+            container.innerHTML = '';
+            const listaColumnas = obtenerOpcionesColumnas();
+
+            camposMapeo.forEach(campo => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'mapping-item';
+                let selectOptions = listaColumnas.map(col => `<option value="${col}" ${col === campo.col ? 'selected' : ''}>Columna ${col}</option>`).join('');
+
+                itemDiv.innerHTML = `
+                    <div class="item-header">
+                        <input type="text" class="input-field-name" value="${escapeHTML(campo.label)}" onchange="actualizarEtiqueta(${campo.id}, this.value, 'ficha')">
+                        <button type="button" class="btn-remove-field" onclick="eliminarCampo(${campo.id}, 'ficha')">🗑️ Eliminar</button>
+                    </div>
+                    <div class="select-container">
+                        <span>Asignado a:</span>
+                        <select onchange="actualizarColumna(${campo.id}, this.value, 'ficha')">${selectOptions}</select>
+                    </div>
+                `;
+                container.appendChild(itemDiv);
+            });
+        }
+
+        function renderizarMapeoBusqueda() {
+            const container = document.getElementById('searchMappingContainer');
+            container.innerHTML = '';
+            const listaColumnas = obtenerOpcionesColumnas();
+
+            camposBusqueda.forEach(campo => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'mapping-item';
+                let selectOptions = listaColumnas.map(col => `<option value="${col}" ${col === campo.col ? 'selected' : ''}>Columna ${col}</option>`).join('');
+
+                itemDiv.innerHTML = `
+                    <div class="item-header">
+                        <input type="text" class="input-field-name" value="${escapeHTML(campo.label)}" onchange="actualizarEtiqueta(${campo.id}, this.value, 'busqueda')">
+                        <button type="button" class="btn-remove-field" onclick="eliminarCampo(${campo.id}, 'busqueda')">🗑️ Eliminar</button>
+                    </div>
+                    <div class="select-container">
+                        <span>Buscar en:</span>
+                        <select onchange="actualizarColumna(${campo.id}, this.value, 'busqueda')">${selectOptions}</select>
+                    </div>
+                `;
+                container.appendChild(itemDiv);
+            });
+        }
+
+        function renderizarMapeoQR() {
+            const container = document.getElementById('qrMappingContainer');
+            container.innerHTML = '';
+            const listaColumnas = obtenerOpcionesColumnas();
+
+            camposQR.forEach((campo, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'mapping-item';
+                let selectOptions = listaColumnas.map(col => `<option value="${col}" ${col === campo.col ? 'selected' : ''}>Columna ${col}</option>`).join('');
+
+                itemDiv.innerHTML = `
+                    <div class="item-header">
+                        <span style="font-size: 0.85rem; font-weight: 700; color: var(--secondary-color);">Posición #${index + 1} en QR:</span>
+                        <input type="text" class="input-field-name" value="${escapeHTML(campo.label)}" onchange="actualizarEtiqueta(${campo.id}, this.value, 'qr')">
+                        <button type="button" class="btn-remove-field" onclick="eliminarCampo(${campo.id}, 'qr')">🗑️ Eliminar</button>
+                    </div>
+                    <div class="select-container">
+                        <span>Buscar en Columna Sheet:</span>
+                        <select onchange="actualizarColumna(${campo.id}, this.value, 'qr')">${selectOptions}</select>
+                    </div>
+                `;
+                container.appendChild(itemDiv);
+            });
+        }
+
+        function renderizarMapeoCertificado() {
+            const container = document.getElementById('certificadoMappingContainer');
+            container.innerHTML = '';
+            const listaColumnas = obtenerOpcionesColumnas();
+
+            camposCertificado.forEach(campo => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'mapping-item';
+                let selectOptions = listaColumnas.map(col => `<option value="${col}" ${col === campo.col ? 'selected' : ''}>Columna ${col}</option>`).join('');
+
+                itemDiv.innerHTML = `
+                    <div class="item-header">
+                        <input type="text" class="input-field-name" value="${escapeHTML(campo.label)}" onchange="actualizarEtiqueta(${campo.id}, this.value, 'certificado')">
+                        <button type="button" class="btn-remove-field" onclick="eliminarCampo(${campo.id}, 'certificado')">🗑️ Eliminar</button>
+                    </div>
+                    <div class="select-container">
+                        <span>Columna Base de Datos:</span>
+                        <select onchange="actualizarColumna(${campo.id}, this.value, 'certificado')">${selectOptions}</select>
+                    </div>
+                `;
+                container.appendChild(itemDiv);
+            });
+        }
+
+        function agregarNuevoCampo(label = "Nuevo Campo", col = "A") {
+            camposMapeo.push({ id: Date.now(), label: label, col: col });
+            renderizarMapeo();
+        }
+
+        function agregarCampoBusqueda(label = "Nuevo Criterio", col = "A") {
+            camposBusqueda.push({ id: Date.now(), label: label, col: col });
+            renderizarMapeoBusqueda();
+        }
+
+        function agregarCampoQR(label = "Folio / Clave", col = "A") {
+            camposQR.push({ id: Date.now(), label: label, col: col });
+            renderizarMapeoQR();
+        }
+
+        function agregarCampoCertificado(label = "Taller / Curso", col = "E") {
+            camposCertificado.push({ id: Date.now(), label: label, col: col });
+            renderizarMapeoCertificado();
+        }
+
+        function eliminarCampo(id, tipo) {
+            if (tipo === 'ficha') {
+                if (camposMapeo.length <= 1) return alert("Debes mantener al menos un campo.");
+                camposMapeo = camposMapeo.filter(i => i.id !== id);
+                renderizarMapeo();
+            } else if (tipo === 'busqueda') {
+                if (camposBusqueda.length <= 1) return alert("Debes mantener al menos un criterio.");
+                camposBusqueda = camposBusqueda.filter(i => i.id !== id);
+                renderizarMapeoBusqueda();
+            } else if (tipo === 'qr') {
+                if (camposQR.length <= 1) return alert("Debes mantener al menos un segmento QR.");
+                camposQR = camposQR.filter(i => i.id !== id);
+                renderizarMapeoQR();
+            } else if (tipo === 'certificado') {
+                if (camposCertificado.length <= 1) return alert("Debes mantener al menos un campo para el certificado.");
+                camposCertificado = camposCertificado.filter(i => i.id !== id);
+                renderizarMapeoCertificado();
+            }
+        }
+
+        function actualizarEtiqueta(id, val, tipo) {
+            const lista = tipo === 'ficha' ? camposMapeo : (tipo === 'busqueda' ? camposBusqueda : (tipo === 'qr' ? camposQR : camposCertificado));
+            const item = lista.find(i => i.id === id);
+            if (item) item.label = val.trim();
+        }
+
+        function actualizarColumna(id, val, tipo) {
+            const lista = tipo === 'ficha' ? camposMapeo : (tipo === 'busqueda' ? camposBusqueda : (tipo === 'qr' ? camposQR : camposCertificado));
+            const item = lista.find(i => i.id === id);
+            if (item) item.col = val;
+        }
+
+        function subirLogotipo(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                logoBase64 = e.target.result;
+                const preview = document.getElementById('logoPreview');
+                preview.src = logoBase64;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removerLogotipo() {
+            logoBase64 = "";
+            document.getElementById('logoFileInput').value = "";
+            const preview = document.getElementById('logoPreview');
+            preview.src = "";
+            preview.style.display = 'none';
+        }
+
+        function extraerSheetId(urlOId) {
+            const match = urlOId.match(/\/d\/([a-zA-Z0-9-_]+)/);
+            return (match && match[1]) ? match[1] : urlOId.trim();
+        }
+
+        function cargarDesdeNube() {
+            if (!binIdActual) {
+                renderizarMapeo();
+                renderizarMapeoBusqueda();
+                renderizarMapeoQR();
+                renderizarMapeoCertificado();
+                actualizarEstadoConexion(false, "Bin independiente no configurado");
+                return;
+            }
+
+            const apiUrl = `https://api.jsonbin.io/v3/b/${binIdActual}/latest`;
+            fetch(apiUrl, { headers: { "X-Master-Key": MASTER_KEY } })
+            .then(res => {
+                if (!res.ok) throw new Error("No se pudo leer el Bin independiente.");
+                return res.json();
+            })
+            .then(data => {
+                const config = data.record;
+                camposMapeo = config.mapeo || camposMapeo;
+                camposBusqueda = config.busqueda || camposBusqueda;
+                camposQR = config.camposQR || camposQR;
+                camposCertificado = config.camposCertificado || camposCertificado;
+                qrSeparador = config.qrSeparador || "|";
+                sheetIdActual = config.sheetId || "";
+                logoBase64 = config.logoBase64 || "";
+                textoCertificadoConfigGlobal = config.textoCertificado || textoCertificadoConfigGlobal;
+
+                document.getElementById('sheetUrlInput').value = sheetIdActual;
+                document.getElementById('qrSeparatorSelect').value = qrSeparador;
+                document.getElementById('certificadoTextoConfig').value = textoCertificadoConfigGlobal;
+
+                if (logoBase64) {
+                    const preview = document.getElementById('logoPreview');
+                    preview.src = logoBase64;
+                    preview.style.display = 'block';
+                }
+
+                renderizarMapeo();
+                renderizarMapeoBusqueda();
+                renderizarMapeoQR();
+                renderizarMapeoCertificado();
+
+                if (sheetIdActual) descargarDatosGoogleSheets(sheetIdActual);
+                else actualizarEstadoConexion(false, "Configura una hoja de cálculo");
+            })
+            .catch(err => {
+                console.error("Error al cargar configuración:", err);
+                actualizarEstadoConexion(false, "Error al cargar configuración");
+            });
+        }
+
+        function guardarEnNube() {
+            const nuevoSheetId = extraerSheetId(document.getElementById('sheetUrlInput').value);
+            const nuevoSeparador = document.getElementById('qrSeparatorSelect').value;
+            textoCertificadoConfigGlobal = document.getElementById('certificadoTextoConfig').value;
+
+            const nuevaConfig = {
+                sheetId: nuevoSheetId,
+                mapeo: camposMapeo,
+                busqueda: camposBusqueda,
+                camposQR: camposQR,
+                camposCertificado: camposCertificado,
+                qrSeparador: nuevoSeparador,
+                logoBase64: logoBase64,
+                textoCertificado: textoCertificadoConfigGlobal
+            };
+
+            if (!binIdActual) {
+                // Crear un NUEVO BIN independiente mediante POST
+                fetch("https://api.jsonbin.io/v3/b", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Master-Key": MASTER_KEY,
+                        "X-Bin-Name": "Pohualizcalli_Certificado_Config"
+                    },
+                    body: JSON.stringify(nuevaConfig)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    binIdActual = data.metadata.id;
+                    localStorage.setItem(LOCAL_STORAGE_BIN_KEY, binIdActual);
+                    alert(`¡Nuevo Bin independiente creado con éxito!\nID Asignado: ${binIdActual}`);
+                    sheetIdActual = nuevoSheetId;
+                    qrSeparador = nuevoSeparador;
+                    descargarDatosGoogleSheets(sheetIdActual);
+                })
+                .catch(err => alert("Error al crear nuevo Bin en la nube: " + err.message));
+            } else {
+                // Actualizar el Bin existente independiente mediante PUT
+                fetch(`https://api.jsonbin.io/v3/b/${binIdActual}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Master-Key": MASTER_KEY
+                    },
+                    body: JSON.stringify(nuevaConfig)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    alert("¡Configuración Global guardada en tu Bin independiente con éxito!");
+                    sheetIdActual = nuevoSheetId;
+                    qrSeparador = nuevoSeparador;
+                    descargarDatosGoogleSheets(sheetIdActual);
+                })
+                .catch(err => alert("Error al actualizar el Bin en la nube: " + err.message));
+            }
+        }
+
+        function descargarDatosGoogleSheets(sheetId) {
+            const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
+
+            fetch(csvUrl)
+                .then(res => {
+                    if (!res.ok) throw new Error("No se pudo descargar la hoja.");
+                    return res.text();
+                })
+                .then(csvText => {
+                    const parsed = Papa.parse(csvText, { skipEmptyLines: true });
+                    datosAlumnosCache = parsed.data || [];
+                    const filasConDatos = Math.max(0, datosAlumnosCache.length - 1);
+                    actualizarEstadoConexion(true, `Conectado (${filasConDatos} filas)`);
+                })
+                .catch(err => {
+                    console.error("Error de acceso:", err);
+                    actualizarEstadoConexion(false, "Error de acceso a la hoja");
+                });
+        }
+
+        function actualizarEstadoConexion(exitosa, mensaje) {
+            const badge = document.getElementById('statusBadge');
+            document.getElementById('statusText').innerText = mensaje;
+            if (exitosa) badge.classList.add('connected');
+            else badge.classList.remove('connected');
+        }
+
+        function colToIdx(colStr) {
+            let num = 0;
+            for (let i = 0; i < colStr.length; i++) {
+                num = num * 26 + colStr.charCodeAt(i) - 64;
+            }
+            return num - 1;
+        }
+
+        function buscarCoincidenciasEnSheet(query) {
+            const q = query.toLowerCase().trim();
+            if (!q || datosAlumnosCache.length === 0) return [];
+
+            const filasCoincidentes = [];
+            for (let i = 1; i < datosAlumnosCache.length; i++) {
+                const fila = datosAlumnosCache[i];
+                let coincide = false;
+
+                for (let criterio of camposBusqueda) {
+                    const idx = colToIdx(criterio.col);
+                    const valorColumna = (fila[idx] || "").toLowerCase();
+                    if (valorColumna.includes(q)) {
+                        coincide = true;
+                        break;
+                    }
+                }
+                if (coincide) filasCoincidentes.push(fila);
+            }
+            return agruparFilasPorPersona(filasCoincidentes);
+        }
+
+        function buscarAlumnoPorCadenaQR(cadenaQR) {
+            if (!cadenaQR || datosAlumnosCache.length === 0) return [];
+
+            let cadenaLimpias = cadenaQR.replace(/^ID:\s*/i, "").trim();
+            const partesQR = cadenaLimpias.split(qrSeparador);
+            let filasCoincidentes = [];
+
+            for (let pos = 0; pos < partesQR.length; pos++) {
+                let valorSegmento = partesQR[pos].trim();
+                if (!valorSegmento) continue;
+
+                valorSegmento = valorSegmento.replace(/_/g, " ").toLowerCase();
+                const configCampo = camposQR[pos];
+                if (!configCampo) continue;
+
+                const idxCol = colToIdx(configCampo.col);
+
+                for (let i = 1; i < datosAlumnosCache.length; i++) {
+                    const fila = datosAlumnosCache[i];
+                    const valExcel = (fila[idxCol] || "").toLowerCase().trim();
+
+                    if (valExcel && (valExcel === valorSegmento || valExcel.includes(valorSegmento))) {
+                        filasCoincidentes.push(fila);
+                    }
+                }
+
+                if (filasCoincidentes.length > 0) {
+                    break;
+                }
+            }
+
+            return agruparFilasPorPersona(filasCoincidentes);
+        }
+
+        function realizarConsultaEnLinea() {
+            const query = document.getElementById('onlineSearchInput').value;
+            if (!query.trim()) return alert("Ingresa un folio, CURP o nombre para consultar.");
+            
+            const coincidencias = buscarCoincidenciasEnSheet(query);
+            if (coincidencias.length === 0) {
+                alert("No se encontró ningún registro con esos datos.");
+                return;
+            }
+
+            alumnosAgrupados = coincidencias;
+            if (coincidencias.length === 1) {
+                abrirModalCertificado(0);
+            } else {
+                mostrarModalSeleccionCoincidencias(coincidencias);
+            }
+        }
+
+        function agruparFilasPorPersona(filas) {
+            const gruposMap = new Map();
+            const colCurp = camposBusqueda.find(c => c.label.toLowerCase().includes('curp'))?.col || 
+                            camposMapeo.find(c => c.label.toLowerCase().includes('curp'))?.col;
+            const colNombre = camposBusqueda.find(c => c.label.toLowerCase().includes('nombre'))?.col;
+            const colApellido = camposBusqueda.find(c => c.label.toLowerCase().includes('apellido'))?.col;
+
+            filas.forEach(fila => {
+                let claveUnica = "";
+                if (colCurp && fila[colToIdx(colCurp)]) {
+                    claveUnica = fila[colToIdx(colCurp)].toUpperCase().trim();
+                } else if (colNombre && colApellido) {
+                    const n = fila[colToIdx(colNombre)] || "";
+                    const a = fila[colToIdx(colApellido)] || "";
+                    claveUnica = `${a}_${n}`.toLowerCase().trim();
+                } else {
+                    claveUnica = fila.join('|');
+                }
+
+                if (!gruposMap.has(claveUnica)) gruposMap.set(claveUnica, []);
+                gruposMap.get(claveUnica).push(fila);
+            });
+            return Array.from(gruposMap.values());
+        }
+
+        function mostrarModalSeleccionCoincidencias(gruposPersona) {
+            const container = document.getElementById('selectionListContainer');
+            container.innerHTML = '';
+
+            gruposPersona.forEach((filasPersona, index) => {
+                const nombre = filasPersona[0][colToIdx("S")] || "Alumno";
+                const apellido = filasPersona[0][colToIdx("R")] || "";
+                const nombreCompleto = `${nombre} ${apellido}`.trim();
+
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'result-item';
+                itemDiv.onclick = () => {
+                    cerrarModalSeleccion();
+                    alumnosAgrupados = [filasPersona];
+                    abrirModalCertificado(0);
+                };
+                itemDiv.innerHTML = `
+                    <div>
+                        <div class="result-name">${escapeHTML(nombreCompleto)}</div>
+                        <div class="result-sub">Coincidencia #${index + 1}</div>
+                    </div>
+                    <button class="btn-select" type="button">Seleccionar ➔</button>
+                `;
+                container.appendChild(itemDiv);
+            });
+            document.getElementById('selectionModal').style.display = 'flex';
+        }
+
+        function abrirModalScanner() {
+            document.getElementById('qrModal').style.display = 'flex';
+            document.getElementById('qrStatusMsg').innerText = 'Iniciando cámara...';
+            isProcessingQR = false;
+
+            if (!html5QrScanner) html5QrScanner = new Html5Qrcode("qr-reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+            html5QrScanner.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure)
+            .then(() => {
+                document.getElementById('qrStatusMsg').innerText = 'Cámara activa. Escanea un código QR.';
+            }).catch(err => {
+                document.getElementById('qrStatusMsg').innerText = 'No se pudo acceder a la cámara.';
+            });
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            if (isProcessingQR) return;
+            isProcessingQR = true;
+
+            document.getElementById('qrStatusMsg').innerText = `✅ QR detectado`;
+
+            const coincidencias = buscarAlumnoPorCadenaQR(decodedText);
+            if (coincidencias.length === 0) {
+                document.getElementById('qrStatusMsg').innerHTML = `<span style="color:var(--danger-color)">QR no encontrado en la base de datos.</span>`;
+                setTimeout(() => { isProcessingQR = false; }, 2500);
+                return;
+            }
+
+            alumnosAgrupados = coincidencias;
+            setTimeout(() => { 
+                cerrarModalScanner(); 
+                isProcessingQR = false;
+                if (coincidencias.length === 1) {
+                    abrirModalCertificado(0);
+                } else {
+                    mostrarModalSeleccionCoincidencias(coincidencias);
+                }
+            }, 500);
+        }
+
+        function onScanFailure(error) { /* Escaneo continuo en segundo plano */ }
+
+        function cerrarModalScanner() {
+            isProcessingQR = false;
+            if (html5QrScanner && html5QrScanner.isScanning) {
+                html5QrScanner.stop().then(() => document.getElementById('qrModal').style.display = 'none');
+            } else {
+                document.getElementById('qrModal').style.display = 'none';
+            }
+        }
+
+        function abrirModalCertificado(indexGrupo) {
+            const filasPersona = alumnosAgrupados[indexGrupo];
+            if (!filasPersona) return;
+            
+            const container = document.getElementById('certificadoOutputContainer');
+            let talleresSet = new Set();
+
+            camposCertificado.forEach(campo => {
+                const idx = colToIdx(campo.col);
+                filasPersona.forEach(fila => {
+                    const val = (fila[idx] || "").trim();
+                    if (!val) return;
+
+                    const labelLower = campo.label.toLowerCase();
+                    if (labelLower.includes('taller') || labelLower.includes('curso') || labelLower.includes('asignatura')) {
+                        talleresSet.add(val);
+                    }
+                });
+            });
+
+            let nombresArr = [];
+            let apellidosArr = [];
+            camposCertificado.forEach(campo => {
+                const idx = colToIdx(campo.col);
+                const labelLower = campo.label.toLowerCase();
+                filasPersona.forEach(fila => {
+                    const val = (fila[idx] || "").trim();
+                    if (val) {
+                        if (labelLower.includes('nombre') && !nombresArr.includes(val)) nombresArr.push(val);
+                        if (labelLower.includes('apellido') && !apellidosArr.includes(val)) apellidosArr.push(val);
+                    }
+                });
+            });
+
+            if (nombresArr.length === 0) {
+                const sVal = (filasPersona[0][colToIdx("S")] || "").trim();
+                if (sVal) nombresArr.push(sVal);
+            }
+            if (apellidosArr.length === 0) {
+                const rVal = (filasPersona[0][colToIdx("R")] || "").trim();
+                if (rVal) apellidosArr.push(rVal);
+            }
+
+            const nombreFinalPersona = `${nombresArr.join(' ')} ${apellidosArr.join(' ')}`.trim() || "Alumno Registrado";
+            const listaTalleres = Array.from(talleresSet);
+
+            let htmlLogotipo = logoBase64 ? `<img src="${logoBase64}" class="certificado-logo" alt="Logotipo Institucional">` : '';
+            let textoLibre = document.getElementById('certificadoTextoConfig').value || textoCertificadoConfigGlobal;
+
+            let htmlTalleresItems = '';
+            if (listaTalleres.length === 0) {
+                htmlTalleresItems = `<li>Sin talleres registrados actualmente</li>`;
+            } else {
+                listaTalleres.forEach(t => {
+                    htmlTalleresItems += `<li>• ${escapeHTML(t)}</li>`;
+                });
+            }
+
+            container.innerHTML = `
+                ${htmlLogotipo}
+                <div class="certificado-titulo">Constancia / Certificado Digital</div>
+                <div class="certificado-nombre">${escapeHTML(nombreFinalPersona)}</div>
+                <div class="certificado-texto-libre">${escapeHTML(textoLibre)}</div>
+                
+                <div class="certificado-talleres-box">
+                    <h4>Talleres y Módulos Actuales:</h4>
+                    <ul>
+                        ${htmlTalleresItems}
+                    </ul>
+                </div>
+            `;
+
+            document.getElementById('studentModal').style.display = 'flex';
+        }
+
+        function cerrarModal() { document.getElementById('studentModal').style.display = 'none'; }
+        window.onload = function() { cargarDesdeNube(); };
+    </script>
+</body>
+</html>
