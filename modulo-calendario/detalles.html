@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>EduFacility Pro - Control de Ocupación Avanzado</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+    </style>
+    <script id="tailwind-config">
+        tailwind.config = {
+          theme: {
+            extend: {
+              "colors": {
+                    "error": "#ba1a1a",
+                    "primary-container": "#1e3a8a",
+                    "on-surface-variant": "#444651",
+                    "on-secondary": "#ffffff",
+                    "inverse-surface": "#213145",
+                    "inverse-on-surface": "#eaf1ff",
+                    "primary-fixed": "#dce1ff",
+                    "on-error-container": "#93000a",
+                    "on-background": "#0b1c30",
+                    "secondary": "#0058be",
+                    "secondary-container": "#2170e4",
+                    "surface-variant": "#d3e4fe",
+                    "outline": "#757682",
+                    "on-primary": "#ffffff",
+                    "surface-container-high": "#dce9ff",
+                    "on-error": "#ffffff",
+                    "outline-variant": "#c5c5d3",
+                    "tertiary-container": "#004a31",
+                    "surface-dim": "#cbdbf5",
+                    "primary": "#00236f",
+                    "surface-container-highest": "#d3e4fe",
+                    "tertiary": "#00311f",
+                    "inverse-primary": "#b6c4ff",
+                    "surface-container-lowest": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "on-tertiary-container": "#27c38a",
+                    "surface-container-low": "#eff4ff",
+                    "surface": "#f8f9ff",
+                    "on-surface": "#0b1c30"
+              }
+            }
+          }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface overflow-x-hidden md:overflow-hidden pb-16 md:pb-0">
+
+    <!-- HEADER RESPONSIVO -->
+    <header class="w-full min-h-[64px] sticky top-0 bg-surface-container-highest flex flex-col md:flex-row justify-between items-center px-4 md:px-6 py-2 md:py-0 z-40 border-b border-outline-variant gap-2 md:gap-0">
+        <div class="flex flex-wrap items-center justify-between md:justify-start w-full md:w-auto gap-2 md:gap-4">
+            <span class="font-bold text-base md:text-lg text-primary">EduFacility Pro</span>
+            
+            <div class="flex items-center gap-1 md:gap-2 bg-surface-container-low px-2 md:px-3 py-1 rounded-lg border border-outline-variant text-[11px] md:text-xs font-semibold">
+                <span class="material-symbols-outlined text-[16px] md:text-[18px] text-secondary">calendar_today</span>
+                <input id="active-date-picker" type="date" onchange="changeActiveDate(this.value)" class="text-secondary font-bold bg-white px-1 md:px-2 py-0.5 rounded border border-outline-variant focus:ring-secondary text-[11px] md:text-xs cursor-pointer"/>
+                
+                <select id="day-selector" onchange="changeActiveDay(this.value)" class="bg-transparent border-none text-[11px] md:text-xs font-bold text-secondary focus:ring-0 py-0 px-1 cursor-pointer">
+                    <option value="Lunes">Lunes</option>
+                    <option value="Martes">Martes</option>
+                    <option value="Miércoles">Miércoles</option>
+                    <option value="Jueves">Jueves</option>
+                    <option value="Viernes">Viernes</option>
+                    <option value="Sábado">Sábado</option>
+                    <option value="Domingo">Domingo</option>
+                </select>
+            </div>
+            
+            <span id="mode-indicator-badge" class="text-[9px] md:text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider bg-slate-200 text-slate-700">
+                Plantilla Base
+            </span>
+        </div>
+
+        <div class="flex items-center justify-between w-full md:w-auto gap-2 md:gap-4 border-t md:border-t-0 border-outline-variant/40 pt-1 md:pt-0">
+            <div class="px-2 py-0.5 bg-amber-100 border border-amber-300 text-amber-800 rounded text-[10px] md:text-[11px] font-bold uppercase tracking-wider">
+                Pass Admin: admin123
+            </div>
+            <a href="configuracion.html" class="flex items-center gap-1 text-xs md:text-sm text-secondary hover:underline">
+                <span class="material-symbols-outlined text-[16px] md:text-[18px]">settings</span> Configuración
+            </a>
+        </div>
+    </header>
+
+    <div class="flex flex-col md:flex-row h-auto md:h-[calc(100vh-64px)]">
+        
+        <!-- NAVEGACIÓN DESKTOP (Sidebar) -->
+        <aside class="hidden md:flex h-full w-64 bg-surface-container border-r border-outline-variant flex-col py-6 px-4 gap-2">
+            <nav class="flex-1 flex flex-col gap-1">
+                <a class="flex items-center gap-3 p-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors" href="index.html">
+                    <span class="material-symbols-outlined">calendar_month</span>
+                    <span class="text-sm font-medium">Calendario</span>
+                </a>
+                <a class="flex items-center gap-3 p-3 rounded-lg text-secondary font-bold bg-secondary-container/20 border-l-4 border-secondary" href="detalles.html">
+                    <span class="material-symbols-outlined">map</span>
+                    <span class="text-sm">Mapa de Ocupación</span>
+                </a>
+                <a class="flex items-center gap-3 p-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors" href="configuracion.html">
+                    <span class="material-symbols-outlined">settings</span>
+                    <span class="text-sm font-medium">Configuración</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="flex-1 flex flex-col md:flex-row p-3 md:p-6 gap-4 md:gap-6 overflow-y-auto md:overflow-hidden">
+            
+            <div class="flex-1 flex flex-col gap-4 md:overflow-y-auto pr-0 md:pr-1 custom-scrollbar">
+                
+                <!-- CABECERA DE FILTROS -->
+                <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-3 md:p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center shadow-sm gap-3">
+                    <div>
+                        <h3 class="text-base md:text-lg font-bold text-primary" id="map-title-text">Mapa Base de Ocupación</h3>
+                        <p class="text-[11px] md:text-xs text-on-surface-variant flex items-center gap-2 md:gap-3 flex-wrap mt-1">
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-emerald-500 rounded-full"></span> Libres</span> 
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-rose-500 rounded-full"></span> Fijos Semestrales</span>
+                            <span id="legend-event-dot" class="hidden flex items-center gap-1"><span class="w-2.5 h-2.5 bg-blue-500 rounded-full"></span> Cita / Evento</span>
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap gap-1 bg-surface-container rounded-lg p-1 border border-outline-variant h-fit" id="building-filters-group">
+                    </div>
+                </div>
+
+                <!-- CONTENEDOR DE BLOQUES -->
+                <div class="grid grid-cols-1 gap-4" id="free-blocks-container">
+                    <div class="text-center p-8 text-xs text-on-surface-variant font-medium">Cargando información desde Firestore...</div>
+                </div>
+            </div>
+
+            <!-- PANEL DE ASIGNACIÓN EXPRESS (MODAL EN MÓVIL / SIDEBAR EN DESKTOP) -->
+            <aside id="express-form-container" class="fixed inset-0 bg-black/50 z-50 hidden md:relative md:inset-auto md:bg-transparent md:z-auto md:flex md:w-80 flex-shrink-0 items-end md:items-start justify-center">
+                <div class="bg-surface-container-lowest border border-outline-variant rounded-t-2xl md:rounded-xl p-4 md:p-4 shadow-2xl md:shadow-sm flex flex-col gap-3 md:gap-4 w-full max-h-[90vh] md:max-h-none overflow-y-auto">
+                    
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h4 class="text-sm font-bold text-primary">Asignación Express</h4>
+                            <p class="text-[11px] text-on-surface-variant">Selecciona un bloque verde para registrar un apartado.</p>
+                        </div>
+                        <button onclick="toggleExpressForm(false)" class="md:hidden text-gray-500 hover:text-gray-700">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
+                    </div>
+                    
+                    <hr class="border-outline-variant"/>
+                    
+                    <form class="space-y-3" onsubmit="saveExpressBooking(event)">
+                        <div>
+                            <label class="block text-[10px] md:text-[11px] font-bold text-on-surface-variant uppercase mb-0.5 md:mb-1">Aula</label>
+                            <input id="form-room" type="text" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-2 text-xs font-semibold text-primary" readonly required />
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] md:text-[11px] font-bold text-on-surface-variant uppercase mb-0.5 md:mb-1">Día Semanal</label>
+                                <input id="form-day" type="text" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-2 text-xs font-semibold text-primary" readonly required />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] md:text-[11px] font-bold text-on-surface-variant uppercase mb-0.5 md:mb-1">Hora Inicio</label>
+                                <input id="form-start-time" type="text" class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-2 text-xs font-semibold text-primary" readonly required />
+                                <input id="form-start-int" type="hidden" />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] md:text-[11px] font-bold text-on-surface-variant uppercase mb-0.5 md:mb-1">Duración</label>
+                            <select id="form-duration" onchange="calculateEndTime()" class="w-full bg-white border border-outline-variant rounded-lg p-2 text-xs text-on-surface focus:ring-secondary">
+                                <option value="1">1 Hora</option>
+                                <option value="2">2 Horas</option>
+                                <option value="3">3 Horas</option>
+                                <option value="4">4 Horas</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] md:text-[11px] font-bold text-on-surface-variant uppercase mb-0.5 md:mb-1">Rango Calculado</label>
+                            <input id="form-final-range" type="text" class="w-full bg-blue-50 text-blue-800 border border-blue-200 font-bold rounded-lg p-2 text-xs" readonly />
+                        </div>
+                        <div>
+                            <label class="block text-[10px] md:text-[11px] font-bold text-on-surface-variant uppercase mb-0.5 md:mb-1">Título de Cita / Evento</label>
+                            <input id="form-title" type="text" placeholder="Ej. Reunión Lic. Juárez" class="w-full bg-white border border-outline-variant rounded-lg p-2 text-xs focus:ring-secondary" required />
+                        </div>
+                        
+                        <div id="collision-alert" class="hidden p-2 bg-red-50 border border-red-200 text-error text-[11px] rounded-lg font-medium">
+                            ⚠️ El rango choca con otra clase o evento. Reduzca las horas.
+                        </div>
+
+                        <button id="submit-booking-btn" type="submit" class="w-full py-2 bg-secondary text-white font-bold text-xs rounded-lg hover:bg-secondary-container transition-all">
+                            Confirmar Evento (Azul)
+                        </button>
+                    </form>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- BARRA DE NAVEGACIÓN INFERIOR (MÓVIL) -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-surface-container-highest border-t border-outline-variant flex justify-around items-center h-14 z-40">
+        <a href="index.html" class="flex flex-col items-center justify-center text-on-surface-variant text-[10px]">
+            <span class="material-symbols-outlined text-[20px]">calendar_month</span>
+            <span>Calendario</span>
+        </a>
+        <a href="detalles.html" class="flex flex-col items-center justify-center text-secondary font-bold text-[10px]">
+            <span class="material-symbols-outlined text-[20px]">map</span>
+            <span>Mapa</span>
+        </a>
+        <a href="configuracion.html" class="flex flex-col items-center justify-center text-on-surface-variant text-[10px]">
+            <span class="material-symbols-outlined text-[20px]">settings</span>
+            <span>Ajustes</span>
+        </a>
+    </nav>
+
+    <!-- MODAL SOBRESCRIBIR AUTORIZACIÓN ADMIN -->
+    <div id="admin-override-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 md:p-6 max-w-sm w-full shadow-2xl space-y-4">
+            <div class="flex items-center gap-2 text-error">
+                <span class="material-symbols-outlined text-[28px] md:text-[32px]">lock_open</span>
+                <div>
+                    <h5 class="text-xs md:text-sm font-bold">Autorización Administrativa</h5>
+                    <p class="text-[10px] md:text-[11px] text-on-surface-variant">Introduce la clave para eliminar permanentemente esta asignación.</p>
+                </div>
+            </div>
+            <hr class="border-outline-variant"/>
+            <div class="bg-surface-container-low p-3 rounded-lg text-xs text-on-surface-variant space-y-1">
+                <p><strong>Aula:</strong> <span id="modal-info-room"></span></p>
+                <p><strong>Bloque:</strong> <span id="modal-info-time"></span></p>
+                <p><strong>Ocupación:</strong> <span class="text-error font-bold" id="modal-info-current"></span></p>
+                <p><strong>Tipo de Registro:</strong> <span class="font-bold uppercase" id="modal-info-type"></span></p>
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-on-surface-variant uppercase mb-1">Clave de Seguridad</label>
+                <input id="admin-password-input" type="password" placeholder="••••••••" class="w-full bg-white border border-outline-variant rounded-lg p-2 text-xs" />
+                <p id="modal-error-msg" class="hidden text-[11px] text-error font-medium mt-1">Contraseña incorrecta.</p>
+            </div>
+            <div class="flex justify-end gap-2 pt-1">
+                <button onclick="closeOverrideModal()" class="px-3 py-1.5 border border-outline-variant rounded-lg text-xs font-medium hover:bg-slate-100">
+                    Cancelar
+                </button>
+                <button onclick="processOverrideAction()" class="px-3 py-1.5 bg-error text-white rounded-lg text-xs font-bold shadow-md hover:opacity-90">
+                    Desalojar Bloque
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MÓDULO DE CLOUD FIRESTORE Y LÓGICA JS -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { 
+            getFirestore, 
+            collection, 
+            onSnapshot, 
+            addDoc, 
+            deleteDoc, 
+            doc 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDJLTxaDb6sNUw8jk4ruHnPEle0J6kfy5Y",
+            authDomain: "calendario-pohua.firebaseapp.com",
+            projectId: "calendario-pohua",
+            storageBucket: "calendario-pohua.firebasestorage.app",
+            messagingSenderId: "83011562243",
+            appId: "1:83011562243:web:4e978318fb98f366241736"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+        const baseTimelineHours = [
+            { label: "08:00", intVal: 8, display: "08:00 - 09:00" },
+            { label: "09:00", intVal: 9, display: "09:00 - 10:00" },
+            { label: "10:00", intVal: 10, display: "10:00 - 11:00" },
+            { label: "11:00", intVal: 11, display: "11:00 - 12:00" },
+            { label: "12:00", intVal: 12, display: "12:00 - 13:00" },
+            { label: "13:00", intVal: 13, display: "13:00 - 14:00" },
+            { label: "14:00", intVal: 14, display: "14:00 - 15:00" },
+            { label: "15:00", intVal: 15, display: "15:00 - 16:00" },
+            { label: "16:00", intVal: 16, display: "16:00 - 17:00" },
+            { label: "17:00", intVal: 17, display: "17:00 - 18:00" },
+            { label: "18:00", intVal: 18, display: "18:00 - 19:00" },
+            { label: "19:00", intVal: 19, display: "19:00 - 20:00" },
+            { label: "20:00", intVal: 20, display: "20:00 - 21:00" }
+        ];
+
+        let state = {
+            rooms: [],
+            schedules: [],
+            events: []
+        };
+
+        let selectedBuilding = "";
+        let selectedDay = "Lunes";
+        let selectedDateStr = ""; 
+        let currentDateObj = new Date();
+        
+        let mapMode = "BASE";
+
+        let targetOverrideId = null;
+        let targetOverrideType = "";
+
+        // Control para desplegar/ocultar el formulario express en móviles
+        window.toggleExpressForm = function(show) {
+            const container = document.getElementById('express-form-container');
+            if (!container) return;
+            if (show) {
+                container.classList.remove('hidden');
+                container.classList.add('flex');
+            } else {
+                container.classList.add('hidden');
+                container.classList.remove('flex');
+            }
+        };
+
+        function formatDateToDDMMYYYY(dateObj) {
+            const padD = dateObj.getDate() < 10 ? '0' + dateObj.getDate() : dateObj.getDate();
+            const padM = (dateObj.getMonth() + 1) < 10 ? '0' + (dateObj.getMonth() + 1) : (dateObj.getMonth() + 1);
+            return `${padD}/${padM}/${dateObj.getFullYear()}`;
+        }
+
+        function formatDateToYYYYMMDD(dateObj) {
+            const padD = dateObj.getDate() < 10 ? '0' + dateObj.getDate() : dateObj.getDate();
+            const padM = (dateObj.getMonth() + 1) < 10 ? '0' + (dateObj.getMonth() + 1) : (dateObj.getMonth() + 1);
+            return `${dateObj.getFullYear()}-${padM}-${padD}`;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const paramFecha = urlParams.get('fecha'); 
+            const paramModo = urlParams.get('modo');   
+
+            if (paramFecha) {
+                const parts = paramFecha.split('-');
+                currentDateObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                mapMode = "GESTION_DIA";
+            } else if (paramModo === 'gestion') {
+                mapMode = "GESTION_DIA";
+                currentDateObj = new Date();
+            } else {
+                mapMode = "BASE";
+                currentDateObj = new Date();
+            }
+
+            selectedDateStr = formatDateToDDMMYYYY(currentDateObj);
+            selectedDay = daysOfWeek[currentDateObj.getDay()];
+
+            const datePicker = document.getElementById('active-date-picker');
+            if (datePicker) datePicker.value = formatDateToYYYYMMDD(currentDateObj);
+
+            const daySelector = document.getElementById('day-selector');
+            if (daySelector) daySelector.value = selectedDay;
+
+            updateUIForCurrentMode();
+            syncFirestoreData();
+        });
+
+        function updateUIForCurrentMode() {
+            const modeBadge = document.getElementById('mode-indicator-badge');
+            const legendEventDot = document.getElementById('legend-event-dot');
+            const mapTitle = document.getElementById('map-title-text');
+
+            if (mapMode === 'BASE') {
+                if(modeBadge) {
+                    modeBadge.innerText = "Modo: Plantilla Base";
+                    modeBadge.className = "text-[9px] md:text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider bg-slate-200 text-slate-700";
+                }
+                if(legendEventDot) legendEventDot.classList.add('hidden');
+                if(mapTitle) mapTitle.innerText = "Mapa Base de Disponibilidad";
+            } else {
+                if(modeBadge) {
+                    modeBadge.innerText = `Gestión: ${selectedDateStr}`;
+                    modeBadge.className = "text-[9px] md:text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-300";
+                }
+                if(legendEventDot) legendEventDot.classList.remove('hidden');
+                if(mapTitle) mapTitle.innerText = `Ocupación: ${selectedDay} ${selectedDateStr}`;
+            }
+        }
+
+        window.changeActiveDate = function(isoDateStr) {
+            if(!isoDateStr) return;
+            
+            const parts = isoDateStr.split('-');
+            currentDateObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+
+            selectedDateStr = formatDateToDDMMYYYY(currentDateObj);
+            selectedDay = daysOfWeek[currentDateObj.getDay()];
+
+            const daySelector = document.getElementById('day-selector');
+            if (daySelector) daySelector.value = selectedDay;
+
+            mapMode = "GESTION_DIA";
+            updateUIForCurrentMode();
+            renderFreeScheduleMap();
+        };
+
+        window.changeActiveDay = function(dayName) {
+            selectedDay = dayName;
+            
+            const targetDayIndex = daysOfWeek.indexOf(dayName);
+            const currentDayIndex = currentDateObj.getDay();
+            const diff = targetDayIndex - currentDayIndex;
+
+            currentDateObj.setDate(currentDateObj.getDate() + diff);
+            selectedDateStr = formatDateToDDMMYYYY(currentDateObj);
+
+            const datePicker = document.getElementById('active-date-picker');
+            if (datePicker) datePicker.value = formatDateToYYYYMMDD(currentDateObj);
+
+            mapMode = "GESTION_DIA";
+            updateUIForCurrentMode();
+            renderFreeScheduleMap();
+        };
+
+        function syncFirestoreData() {
+            onSnapshot(collection(db, "facility_rooms"), (snapshot) => {
+                state.rooms = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                buildDynamicBuildingFilters();
+            });
+
+            onSnapshot(collection(db, "facility_schedules"), (snapshot) => {
+                state.schedules = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderFreeScheduleMap();
+            });
+
+            onSnapshot(collection(db, "facility_events"), (snapshot) => {
+                state.events = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderFreeScheduleMap();
+            });
+        }
+
+        function buildDynamicBuildingFilters() {
+            const filterGroup = document.getElementById('building-filters-group');
+            filterGroup.innerHTML = '';
+
+            const uniqueBuildings = [...new Set(state.rooms.map(r => r.building))].filter(Boolean);
+
+            if (uniqueBuildings.length === 0) {
+                filterGroup.innerHTML = '<span class="text-xs text-on-surface-variant px-2 py-1">Sin edificios</span>';
+                selectedBuilding = "";
+                renderFreeScheduleMap();
+                return;
+            }
+
+            if (!selectedBuilding || !uniqueBuildings.includes(selectedBuilding)) {
+                selectedBuilding = uniqueBuildings[0];
+            }
+
+            uniqueBuildings.forEach(building => {
+                const isActive = building === selectedBuilding;
+                const activeClasses = isActive ? "bg-white text-primary shadow-sm" : "text-on-surface-variant hover:text-primary";
+
+                const btn = document.createElement('button');
+                btn.type = "button";
+                btn.className = `px-2.5 py-1 text-[11px] md:text-xs font-semibold rounded-md transition-all ${activeClasses}`;
+                btn.innerText = building;
+                btn.onclick = () => {
+                    selectedBuilding = building;
+                    buildDynamicBuildingFilters();
+                };
+                filterGroup.appendChild(btn);
+            });
+
+            renderFreeScheduleMap();
+        }
+
+        function parseRangeHours(timeString) {
+            try {
+                const parts = timeString.split('-');
+                if(parts.length < 2) return [];
+                const startHour = parseInt(parts[0].trim().split(':')[0], 10);
+                const endHour = parseInt(parts[1].trim().split(':')[0], 10);
+                let range = [];
+                for(let h = startHour; h < endHour; h++) { range.push(h); }
+                return range;
+            } catch(e) { return []; }
+        }
+
+        function renderFreeScheduleMap() {
+            const container = document.getElementById('free-blocks-container');
+            container.innerHTML = '';
+
+            const filteredRooms = state.rooms.filter(r => r.building === selectedBuilding);
+
+            if (!selectedBuilding || filteredRooms.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-surface-container-low p-8 rounded-xl border border-dashed border-outline-variant text-center">
+                        <span class="material-symbols-outlined text-[40px] text-outline">meeting_room</span>
+                        <p class="text-xs font-medium text-on-surface-variant mt-2">No hay aulas registradas para este edificio en Firestore.</p>
+                    </div>`;
+                return;
+            }
+
+            filteredRooms.forEach(room => {
+                const normalize = str => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
+
+                const roomSchedules = state.schedules.filter(s => s.room === room.name && normalize(s.day) === normalize(selectedDay));
+
+                let occupancyMap = {};
+
+                roomSchedules.forEach(occ => {
+                    const hours = parseRangeHours(occ.time);
+                    hours.forEach(h => {
+                        occupancyMap[h] = { title: occ.title, id: occ.id, type: 'fixed' };
+                    });
+                });
+
+                if (mapMode === "GESTION_DIA") {
+                    const roomEvents = state.events.filter(e => e.room === room.name && e.date === selectedDateStr);
+                    roomEvents.forEach(evt => {
+                        const hours = parseRangeHours(evt.time);
+                        hours.forEach(h => {
+                            occupancyMap[h] = { title: evt.title, id: evt.id, type: 'event' };
+                        });
+                    });
+                }
+
+                let blocksHTML = '';
+                let totalFreeCounter = 0;
+
+                baseTimelineHours.forEach(hourObj => {
+                    const status = occupancyMap[hourObj.intVal];
+
+                    if (status) {
+                        if (status.type === 'fixed') {
+                            blocksHTML += `
+                                <button onclick="triggerAdminOverride('${room.name}', '${hourObj.display}', '${status.title}', '${status.id}', 'fixed')" class="p-1.5 md:p-2 bg-rose-50 text-rose-700 border border-rose-200 rounded-lg hover:bg-rose-100 transition-all text-left flex flex-col justify-between min-h-[50px] md:min-h-[54px]">
+                                    <div class="w-full">
+                                        <div class="text-[7px] md:text-[8px] font-bold uppercase text-rose-500 tracking-wider">FIJO</div>
+                                        <span class="text-[11px] md:text-xs font-bold block">${hourObj.label}</span>
+                                        <span class="text-[9px] md:text-[10px] text-rose-900 truncate block max-w-[100px] md:max-w-[120px] font-medium">${status.title}</span>
+                                    </div>
+                                </button>`;
+                        } else {
+                            blocksHTML += `
+                                <button onclick="triggerAdminOverride('${room.name}', '${hourObj.display}', '${status.title}', '${status.id}', 'event')" class="p-1.5 md:p-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-all text-left flex flex-col justify-between min-h-[50px] md:min-h-[54px]">
+                                    <div class="w-full">
+                                        <div class="text-[7px] md:text-[8px] font-bold uppercase text-blue-500 tracking-wider">EVENTO</div>
+                                        <span class="text-[11px] md:text-xs font-bold block">${hourObj.label}</span>
+                                        <span class="text-[9px] md:text-[10px] text-blue-900 truncate block max-w-[100px] md:max-w-[120px] font-medium">${status.title}</span>
+                                    </div>
+                                </button>`;
+                        }
+                    } else {
+                        totalFreeCounter++;
+                        blocksHTML += `
+                            <button onclick="selectFreeSlot('${room.name}', '${hourObj.label}', ${hourObj.intVal})" class="p-1.5 md:p-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-all text-left flex flex-col justify-between min-h-[50px] md:min-h-[54px] group">
+                                <span class="text-[7px] md:text-[8px] text-emerald-600 font-bold uppercase tracking-wider">LIBRE</span>
+                                <span class="text-[11px] md:text-xs font-bold block">${hourObj.label}</span>
+                            </button>`;
+                    }
+                });
+
+                container.innerHTML += `
+                    <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-3 md:p-4 flex flex-col gap-2 shadow-sm">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h4 class="font-bold text-xs md:text-sm text-primary">${room.name}</h4>
+                                <p class="text-[9px] md:text-[10px] text-on-surface-variant font-semibold uppercase">${room.type} • ${room.building}</p>
+                            </div>
+                            <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-bold text-[8px] md:text-[9px]">
+                                ${totalFreeCounter} Horas Libres
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1 mt-1">
+                            ${blocksHTML}
+                        </div>
+                    </div>`;
+            });
+        }
+
+        window.selectFreeSlot = function(roomName, timeLabel, startInt) {
+            document.getElementById('form-room').value = roomName;
+            document.getElementById('form-day').value = selectedDay;
+            document.getElementById('form-start-time').value = timeLabel;
+            document.getElementById('form-start-int').value = startInt;
+            document.getElementById('form-duration').value = "1";
+            
+            calculateEndTime();
+            
+            // Si está en móvil, abrimos la ventana desplegable automáticamente
+            if (window.innerWidth < 768) {
+                toggleExpressForm(true);
+            }
+            
+            document.getElementById('form-title').focus();
+        };
+
+        window.calculateEndTime = function() {
+            const startInt = parseInt(document.getElementById('form-start-int').value, 10);
+            const duration = parseInt(document.getElementById('form-duration').value, 10);
+            
+            if(!startInt) return;
+
+            const finalEndInt = startInt + duration;
+            const padStart = startInt < 10 ? '0' + startInt : startInt;
+            const padEnd = finalEndInt < 10 ? '0' + finalEndInt : finalEndInt;
+            const computedRange = `${padStart}:00 - ${padEnd}:00`;
+            
+            document.getElementById('form-final-range').value = computedRange;
+        };
+
+        window.saveExpressBooking = async function(event) {
+            event.preventDefault();
+            const room = document.getElementById('form-room').value;
+            const duration = parseInt(document.getElementById('form-duration').value, 10);
+            const startInt = parseInt(document.getElementById('form-start-int').value, 10);
+            const timeRange = document.getElementById('form-final-range').value;
+            const title = document.getElementById('form-title').value;
+
+            try {
+                await addDoc(collection(db, "facility_events"), {
+                    room: room,
+                    date: selectedDateStr,
+                    time: timeRange,
+                    title: title,
+                    type: "express"
+                });
+                
+                // Reiniciar formulario y cerrar modal móvil
+                document.getElementById('form-title').value = '';
+                toggleExpressForm(false);
+            } catch (e) {
+                console.error("Error al guardar evento: ", e);
+            }
+        };
+
+        window.triggerAdminOverride = function(room, time, title, id, type) {
+            targetOverrideId = id;
+            targetOverrideType = type;
+
+            document.getElementById('modal-info-room').innerText = room;
+            document.getElementById('modal-info-time').innerText = time;
+            document.getElementById('modal-info-current').innerText = title;
+            document.getElementById('modal-info-type').innerText = type === 'fixed' ? 'Fijo Semestral' : 'Evento Único';
+
+            document.getElementById('admin-password-input').value = '';
+            document.getElementById('modal-error-msg').classList.add('hidden');
+            document.getElementById('admin-override-modal').classList.remove('hidden');
+        };
+
+        window.closeOverrideModal = function() {
+            document.getElementById('admin-override-modal').classList.add('hidden');
+            targetOverrideId = null;
+            targetOverrideType = "";
+        };
+
+        window.processOverrideAction = async function() {
+            const pass = document.getElementById('admin-password-input').value;
+            if (pass !== "admin123") {
+                document.getElementById('modal-error-msg').classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const collectionName = targetOverrideType === 'fixed' ? "facility_schedules" : "facility_events";
+                await deleteDoc(doc(db, collectionName, targetOverrideId));
+                closeOverrideModal();
+            } catch (e) {
+                console.error("Error al eliminar documento: ", e);
+            }
+        };
+    </script>
+</body>
+</html>
