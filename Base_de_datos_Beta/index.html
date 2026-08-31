@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edufacility Pro - Unificación de Nombres</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #1e293b;
+            --secondary-color: #2563eb;
+            --success-color: #16a34a;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #334155;
+            --border-color: #e2e8f0;
+        }
+
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .card { background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border-color); padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .btn-primary { background-color: var(--secondary-color); color: white; border: none; padding: 10px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .btn-primary:hover { background-color: #1d4ed8; }
+        .btn-config { background-color: #475569; color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .progress-bar-container { width: 100%; background-color: #e2e8f0; border-radius: 8px; overflow: hidden; height: 12px; margin-top: 10px; }
+        .progress-bar-fill { height: 100%; background-color: var(--secondary-color); width: 0%; transition: width 0.2s ease-in-out; }
+        .modal-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-card { background: white; border-radius: 8px; width: 100%; max-width: 750px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
+        .radio-option { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; background-color: #f8fafc; margin-bottom: 6px; }
+        .radio-option:hover { background-color: #f1f5f9; }
+        .input-text { width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
+        .config-section { border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 15px; }
+        .help-label { font-size: 0.8rem; color: #64748b; margin-top: 3px; }
+        .split-box { display: flex; gap: 10px; margin-top: 10px; background: #f1f5f9; padding: 10px; border-radius: 6px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-bar">
+        <h2>Edufacility Pro - Unificación de Nombres</h2>
+        <button class="btn-config" onclick="solicitarAccesoConfig()">⚙️ Configuración (Admin)</button>
+    </div>
+
+    <section class="card">
+        <h3>🧹 Escaneo Ortográfico Estricto por Columna</h3>
+        <p>Detecta discrepancias de acentos o caracteres individualmente en Columna R y Columna S.</p>
+        
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <button type="button" class="btn-primary" onclick="iniciarEscaneoBaseDatos()">🔍 Iniciar Escaneo Estricto</button>
+                <button type="button" style="background:#0284c7; color:white; border:none; padding:10px 16px; border-radius:6px; cursor:pointer;" onclick="exportarCSVLimpio()">📥 Exportar CSV</button>
+                <button type="button" style="background:#15803d; color:white; border:none; padding:10px 16px; border-radius:6px; cursor:pointer;" onclick="exportarXLSXLimpio()">📊 Exportar XLSX (Excel)</button>
+                <span id="scanPercentText" style="font-weight:600; color: var(--secondary-color); display:none;">Escaneando 0%...</span>
+            </div>
+
+            <div id="progressScanContainer" class="progress-bar-container" style="display:none;">
+                <div id="progressScanFill" class="progress-bar-fill"></div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- MODAL CONFIGURACIÓN ADMIN -->
+<div class="modal-backdrop" id="configModal" style="display:none;">
+    <div class="modal-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0;">⚙️ Configuración del Sistema (Admin)</h3>
+            <button onclick="cerrarConfigModal()" style="border:none; background:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+        </div>
+        
+        <div class="config-section">
+            <h4 style="margin:0 0 10px 0; color:var(--secondary-color);">🌐 Origen Dual de Datos</h4>
+            <div style="margin-bottom: 12px;">
+                <label style="font-weight:bold; display:block; margin-bottom:4px;">☁️ Conectar Google Sheets (ID o URL):</label>
+                <div style="display:flex; gap:8px;">
+                    <input type="text" id="cfgGoogleSheetsURL" class="input-text" placeholder="https://docs.google.com/spreadsheets/d/TU_ID/edit...">
+                    <button type="button" class="btn-primary" style="white-space:nowrap;" onclick="conectarGoogleSheets()">Sincronizar</button>
+                </div>
+            </div>
+            <div>
+                <label style="font-weight:bold; display:block; margin-bottom:4px;">📁 Cargar Archivo Local (.csv):</label>
+                <input type="file" id="cfgFileInput" accept=".csv" onchange="cargarCSVLocal(event)" class="input-text">
+            </div>
+        </div>
+
+        <div class="config-section">
+            <h4 style="margin:0 0 10px 0; color:var(--secondary-color);">📊 Reglas de Comparación y Reemplazo</h4>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="font-weight:bold; display:block;">1. Columnas de Búsqueda Ordenadas (Ej: R, S):</label>
+                <input type="text" id="cfgColsBusqueda" class="input-text" value="R, S" placeholder="Ej: R, S">
+                <div class="help-label">Columna R (Apellidos) y Columna S (Nombres). Se comparan de forma independiente.</div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="font-weight:bold; display:block;">2. Columnas Clave de Cruce Duro:</label>
+                <input type="text" id="cfgColsCruce" class="input-text" value="P, Q" placeholder="Ej: P, Q">
+                <div class="help-label">Campos únicos (ej: CURP, Teléfono) para agrupar registros de la misma persona.</div>
+            </div>
+
+            <div>
+                <label style="font-weight:bold; display:block; margin-bottom:4px;">3. Columna Folio / Registro:</label>
+                <input type="text" id="cfgColFolio" class="input-text" value="A" placeholder="Ej: A">
+            </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+            <button style="background:#64748b; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;" onclick="cerrarConfigModal()">Cancelar</button>
+            <button style="background:var(--secondary-color); color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;" onclick="guardarConfiguracion()">💾 Guardar Configuración</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CORRECTOR DE UNIFICACIÓN -->
+<div class="modal-backdrop" id="correctorModal" style="display:none;">
+    <div class="modal-card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="margin:0;">📝 Confirmar Unificación (<span id="casoActualNum">1</span>/<span id="totalCasosNum">0</span>)</h3>
+            <button onclick="cerrarCorrectorModal()" style="border:none; background:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+        </div>
+        <div style="padding: 15px 0;">
+            <div style="background:#eff6ff; border-left:4px solid #2563eb; padding:10px; margin-bottom: 1rem; border-radius:4px;">
+                Se detectaron diferencias de acentos o caracteres. Selecciona una opción o edita directamente los campos en MAYÚSCULAS:
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="font-weight:bold; display:block; margin-bottom:8px;">Variantes Encontradas (Columna <span id="lblCol1Header">R</span> | Columna <span id="lblCol2Header">S</span>):</label>
+                <div id="opcionesNombresContainer"></div>
+                
+                <div class="split-box">
+                    <div style="flex:1;">
+                        <label style="font-size:0.85rem; font-weight:bold;">Columna 1 (<span id="lblCol1">R</span> - Apellidos):</label>
+                        <input type="text" id="inputCol1" class="input-text" style="text-transform:uppercase;" placeholder="Ej: TELLEZ GUZMAN">
+                    </div>
+                    <div style="flex:1;">
+                        <label style="font-size:0.85rem; font-weight:bold;">Columna 2 (<span id="lblCol2">S</span> - Nombres):</label>
+                        <input type="text" id="inputCol2" class="input-text" style="text-transform:uppercase;" placeholder="Ej: ANTONY">
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label style="font-weight:bold; display:block; margin-bottom:5px;">Registros / Folios que se actualizarán:</label>
+                <ul id="listaFoliosAfectados" style="background:#f8fafc; padding:10px 25px; border-radius:6px; max-height:120px; overflow-y:auto; margin:0;"></ul>
+            </div>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:15px;">
+            <button style="background:#64748b; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;" onclick="saltarCaso()">Saltar</button>
+            <button style="background:var(--success-color); color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;" onclick="aplicarUnificacionCaso()">✅ Reemplazar y Unificar Persona</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let configApp = {
+    googleSheetsURL: '',
+    colsBusqueda: ['R', 'S'], 
+    colsCruce: ['P', 'Q'],    
+    colFolio: 'A'
+};
+
+// Datos de prueba con los escenarios mencionados
+window.datosAlumnosCache = [
+    ["Folio", "CURP", "Telefono", "Apellido (R)", "Nombre (S)", "Especialidad"],
+    ["FOL-001", "CURP999999", "5550000000", "Téllez Guzmán", "Antony", "Fotografía"],
+    ["FOL-002", "CURP999999", "5550000000", "Téllez Guzmán", "Antóny", "Técnicas"],
+    ["FOL-003", "CURP999999", "5550000000", "Tellez Guzmán", "Antony", "Sábado"]
+];
+
+let casosInconsistentes = [];
+let indiceCasoActual = 0;
+
+function limpiarMayusculasSinAcentos(txt) {
+    return (txt || "")
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") 
+        .toUpperCase()
+        .replace(/[^A-Z0-9\s]/g, "") 
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function solicitarAccesoConfig() {
+    const pass = prompt("Ingrese la clave de administrador:");
+    if (pass === "pohua2026") {
+        document.getElementById('cfgGoogleSheetsURL').value = configApp.googleSheetsURL;
+        document.getElementById('cfgColsBusqueda').value = configApp.colsBusqueda.join(', ');
+        document.getElementById('cfgColsCruce').value = configApp.colsCruce.join(', ');
+        document.getElementById('cfgColFolio').value = configApp.colFolio;
+        document.getElementById('configModal').style.display = 'flex';
+    } else if (pass !== null) {
+        alert("🔒 Clave incorrecta.");
+    }
+}
+
+function parseListaCols(str) {
+    return str.split(',').map(s => s.trim().toUpperCase()).filter(s => s.length > 0);
+}
+
+function guardarConfiguracion() {
+    configApp.colsBusqueda = parseListaCols(document.getElementById('cfgColsBusqueda').value);
+    configApp.colsCruce = parseListaCols(document.getElementById('cfgColsCruce').value);
+    configApp.colFolio = document.getElementById('cfgColFolio').value.trim().toUpperCase();
+    configApp.googleSheetsURL = document.getElementById('cfgGoogleSheetsURL').value.trim();
+    cerrarConfigModal();
+    alert("💾 Configuración guardada correctamente.");
+}
+
+function cerrarConfigModal() { document.getElementById('configModal').style.display = 'none'; }
+
+function colToIdx(col) {
+    if (!col) return 0;
+    if (typeof col === 'number') return col;
+    let base = 0;
+    for (let i = 0; i < col.length; i++) {
+        base = base * 26 + col.charCodeAt(i) - 64;
+    }
+    return base - 1;
+}
+
+function conectarGoogleSheets() {
+    const inputVal = document.getElementById('cfgGoogleSheetsURL').value.trim();
+    if (!inputVal) return alert("Ingresa un enlace válido de Google Sheets.");
+    let sheetID = inputVal;
+    const match = inputVal.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    if (match && match[1]) sheetID = match[1];
+
+    fetch(`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv`)
+        .then(res => res.text())
+        .then(csvText => {
+            const filas = parseCSV(csvText);
+            if (filas.length > 0) {
+                window.datosAlumnosCache = filas;
+                configApp.googleSheetsURL = inputVal;
+                alert(`✅ Base cargada con ${filas.length - 1} registros.`);
+            }
+        }).catch(err => alert("Error al conectar: " + err.message));
+}
+
+function cargarCSVLocal(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const filas = parseCSV(e.target.result);
+        if (filas.length > 0) {
+            window.datosAlumnosCache = filas;
+            alert(`✅ Base local cargada con ${filas.length - 1} registros.`);
+        }
+    };
+    reader.readAsText(file, "UTF-8");
+}
+
+function parseCSV(text) {
+    return text.split(/\r?\n/).map(line => {
+        return line.split(',').map(cell => cell.replace(/^"(.*)"$/, '$1').trim());
+    }).filter(row => row.length > 1 || row[0] !== "");
+}
+
+function ejecutarAlgoritmoUnificacion(filas) {
+    const indicesCruce = configApp.colsCruce.map(colToIdx);
+    const mapaUnificado = {};
+
+    filas.forEach(fila => {
+        const clave = indicesCruce.map(idx => (fila[idx] || "").trim().toUpperCase()).join('|');
+        if (!clave.replace(/\|/g, '')) return;
+        if (!mapaUnificado[clave]) mapaUnificado[clave] = [];
+        mapaUnificado[clave].push(fila);
+    });
+
+    return Object.values(mapaUnificado);
+}
+
+// ESCANEO CON EVALUACIÓN DE ACENTOS INDEPENDIENTE EN CADA COLUMNA
+function iniciarEscaneoBaseDatos() {
+    if (!window.datosAlumnosCache || window.datosAlumnosCache.length <= 1) {
+        return alert("Por favor carga una base de datos primero.");
+    }
+
+    const progressContainer = document.getElementById('progressScanContainer');
+    const progressFill = document.getElementById('progressScanFill');
+    const progressText = document.getElementById('scanPercentText');
+
+    progressContainer.style.display = 'block';
+    progressText.style.display = 'inline';
+    progressFill.style.width = '0%';
+
+    casosInconsistentes = [];
+    const idxCol1 = colToIdx(configApp.colsBusqueda[0] || 'R');
+    const idxCol2 = colToIdx(configApp.colsBusqueda[1] || 'S');
+
+    const todasLasFilas = window.datosAlumnosCache.slice(1);
+    const gruposDuro = ejecutarAlgoritmoUnificacion(todasLasFilas);
+
+    let i = 0;
+    const totalGrupos = gruposDuro.length;
+
+    function procesarLote() {
+        const limite = Math.min(i + 20, totalGrupos);
+
+        for (; i < limite; i++) {
+            const grupoFilas = gruposDuro[i];
+            if (grupoFilas.length < 2) continue;
+
+            const setCol1 = new Set();
+            const setCol2 = new Set();
+
+            grupoFilas.forEach(f => {
+                const val1 = (f[idxCol1] || '').trim();
+                const val2 = (f[idxCol2] || '').trim();
+                if (val1) setCol1.add(val1);
+                if (val2) setCol2.add(val2);
+            });
+
+            // Detecta la discrepancia si cualquiera de las dos columnas tiene más de 1 variante (con o sin acentos)
+            if (setCol1.size > 1 || setCol2.size > 1) {
+                casosInconsistentes.push(grupoFilas);
+            }
+        }
+
+        const porcentaje = Math.round((i / totalGrupos) * 100);
+        progressFill.style.width = `${porcentaje}%`;
+        progressText.innerText = `Escaneando ${porcentaje}%...`;
+
+        if (i < totalGrupos) {
+            setTimeout(procesarLote, 10);
+        } else {
+            setTimeout(() => {
+                progressContainer.style.display = 'none';
+                progressText.style.display = 'none';
+
+                if (casosInconsistentes.length === 0) {
+                    alert("🎉 Base de datos 100% limpia. No se encontraron variaciones de acentos ni de caracteres.");
+                } else {
+                    alert(`🔎 Se detectaron ${casosInconsistentes.length} personas con discrepancias de acentos/ortografía. Abriendo corrector...`);
+                    indiceCasoActual = 0;
+                    mostrarCasoCorreccion(0);
+                }
+            }, 200);
+        }
+    }
+
+    procesarLote();
+}
+
+function seleccionarVarianteRadio(valCol1, valCol2) {
+    document.getElementById('inputCol1').value = valCol1;
+    document.getElementById('inputCol2').value = valCol2;
+}
+
+function mostrarCasoCorreccion(index) {
+    if (index >= casosInconsistentes.length) {
+        cerrarCorrectorModal();
+        alert("🏆 ¡Proceso finalizado! Todos los nombres han sido unificados.");
+        return;
+    }
+
+    const grupoFilas = casosInconsistentes[index];
+    document.getElementById('casoActualNum').innerText = index + 1;
+    document.getElementById('totalCasosNum').innerText = casosInconsistentes.length;
+
+    const idxCol1 = colToIdx(configApp.colsBusqueda[0] || 'R');
+    const idxCol2 = colToIdx(configApp.colsBusqueda[1] || 'S');
+    const idxFolio = colToIdx(configApp.colFolio);
+
+    const labelCol1 = configApp.colsBusqueda[0] || 'R';
+    const labelCol2 = configApp.colsBusqueda[1] || 'S';
+
+    document.getElementById('lblCol1Header').innerText = labelCol1;
+    document.getElementById('lblCol2Header').innerText = labelCol2;
+    document.getElementById('lblCol1').innerText = labelCol1;
+    document.getElementById('lblCol2').innerText = labelCol2;
+
+    const mapaOpciones = new Map();
+    const foliosVinculados = [];
+
+    grupoFilas.forEach(f => {
+        const valCol1 = (f[idxCol1] || '').trim();
+        const valCol2 = (f[idxCol2] || '').trim();
+        const claveKey = `${valCol1} | ${valCol2}`;
+
+        if (valCol1 || valCol2) {
+            mapaOpciones.set(claveKey, { col1: valCol1, col2: valCol2 });
+        }
+        if (f[idxFolio]) foliosVinculados.push(f[idxFolio]);
+    });
+
+    const containerOpciones = document.getElementById('opcionesNombresContainer');
+    containerOpciones.innerHTML = '';
+    
+    let isFirst = true;
+    let primeraCol1 = "", primeraCol2 = "";
+
+    mapaOpciones.forEach((val, key) => {
+        const c1Mayus = limpiarMayusculasSinAcentos(val.col1);
+        const c2Mayus = limpiarMayusculasSinAcentos(val.col2);
+
+        if (isFirst) {
+            primeraCol1 = c1Mayus;
+            primeraCol2 = c2Mayus;
+        }
+
+        const radioDiv = document.createElement('label');
+        radioDiv.className = 'radio-option';
+        radioDiv.innerHTML = `
+            <input type="radio" name="opcionNombreMaster" ${isFirst ? 'checked' : ''} onchange="seleccionarVarianteRadio('${escapeHTML(c1Mayus)}', '${escapeHTML(c2Mayus)}')">
+            <span>Original: <strong>"${escapeHTML(val.col1)}"</strong> | <strong>"${escapeHTML(val.col2)}"</strong> &rarr; Reemplazar por: <em>[${escapeHTML(c1Mayus)}] [${escapeHTML(c2Mayus)}]</em></span>
+        `;
+        containerOpciones.appendChild(radioDiv);
+        isFirst = false;
+    });
+
+    document.getElementById('inputCol1').value = primeraCol1;
+    document.getElementById('inputCol2').value = primeraCol2;
+
+    const listaFolios = document.getElementById('listaFoliosAfectados');
+    listaFolios.innerHTML = foliosVinculados.map(fol => `<li>📄 <strong>Folio:</strong> ${escapeHTML(fol)}</li>`).join('');
+
+    document.getElementById('correctorModal').style.display = 'flex';
+}
+
+function aplicarUnificacionCaso() {
+    const grupoFilas = casosInconsistentes[indiceCasoActual];
+    
+    const finalCol1 = limpiarMayusculasSinAcentos(document.getElementById('inputCol1').value);
+    const finalCol2 = limpiarMayusculasSinAcentos(document.getElementById('inputCol2').value);
+
+    if (!finalCol1 && !finalCol2) return alert("Por favor ingresa los valores a reemplazar.");
+
+    const idxCol1 = colToIdx(configApp.colsBusqueda[0] || 'R');
+    const idxCol2 = colToIdx(configApp.colsBusqueda[1] || 'S');
+
+    grupoFilas.forEach(fila => {
+        fila[idxCol1] = finalCol1;
+        fila[idxCol2] = finalCol2;
+    });
+
+    indiceCasoActual++;
+    mostrarCasoCorreccion(indiceCasoActual);
+}
+
+function saltarCaso() {
+    indiceCasoActual++;
+    mostrarCasoCorreccion(indiceCasoActual);
+}
+
+function cerrarCorrectorModal() { document.getElementById('correctorModal').style.display = 'none'; }
+
+function exportarCSVLimpio() {
+    let csvContent = "\uFEFF";
+    window.datosAlumnosCache.forEach(row => {
+        csvContent += row.map(e => `"${(e || '').toString().replace(/"/g, '""')}"`).join(",") + "\n";
+    });
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "base_alumnos_limpia.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function exportarXLSXLimpio() {
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(window.datosAlumnosCache);
+    XLSX.utils.book_append_sheet(wb, ws, "Base Limpia");
+    XLSX.writeFile(wb, "base_alumnos_limpia.xlsx");
+}
+
+function escapeHTML(str) {
+    return String(str || '').replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+    });
+}
+</script>
+</body>
+</html>
